@@ -27,7 +27,8 @@ Claude Code as the MCP server `codex-cu` and explains how to drive it.
   ```
 
   It finds the newest Computer Use in the ChatGPT app, registers it as `codex-cu`, checks that it
-  connects, and adds two hooks that remember the user's app approvals for the session. Then tell
+  connects, and adds hooks that remember the user's app approvals for the session and tell
+  Computer Use when each turn ends (its hidden `turn_ended` tool, as the ChatGPT app does). Then tell
   the user to close and reopen Claude Code: MCP tools load at startup.
   If it stops, show the user its message; it says what is missing.
 

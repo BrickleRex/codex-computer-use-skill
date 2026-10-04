@@ -63,12 +63,15 @@ To never be asked about an app, add its name (one per line) to
 | You are asked on every click | Run the setup again, then close and reopen Claude Code. |
 | Setup says Computer Use was not found | Install the ChatGPT desktop app and use Computer Use in it once. |
 | It stopped working after a ChatGPT update | Run the setup again, then close and reopen Claude Code. |
+| The Computer Use pointer stays on screen | Run the setup again (it adds the "turn ended" hook), then close and reopen Claude Code. |
 
 ## Good to know
 
 - This is an unofficial bridge. It is not made by OpenAI or Anthropic, and a ChatGPT update can
   change things. Running the setup again usually fixes it.
-- Nothing is sent anywhere by this skill. The setup only adds a server and two small hooks to
+- When Claude finishes a reply, the skill tells Computer Use the turn is over (like the ChatGPT
+  app does), so it can tidy up, for example its on-screen pointer.
+- Nothing is sent anywhere by this skill. The setup only adds a server and a few small hooks to
   your own Claude Code settings (it saves a backup first), pointing at the ChatGPT app already
   on your Mac.
 - To remove everything: `python3 ~/.claude/skills/codex-computer-use/scripts/setup.py --uninstall`

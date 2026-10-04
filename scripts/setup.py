@@ -7,9 +7,11 @@ live in ~/.codex/plugins/cache/openai-bundled/unified-computer-use/<version>/.mc
 script:
   1. reads the newest version of that file and registers the same command, arguments and
      environment in Claude Code as a user-wide MCP server (default name: "codex-cu");
-  2. adds two hooks to ~/.claude/settings.json (a backup is saved first) that remember the
-     "Allow Computer Use to use <App>?" answer for the rest of the session (scripts/approvals.py).
-     Without them, Claude Code would ask on every single click.
+  2. adds hooks to ~/.claude/settings.json (a backup is saved first):
+     - two that remember the "Allow Computer Use to use <App>?" answer for the rest of the
+       session (scripts/approvals.py); without them, Claude Code would ask on every click;
+     - two that tell Computer Use when Claude's turn ends (its hidden `turn_ended` tool, as the
+       ChatGPT app does), so it can clean up, for example its on-screen pointer.
 
 Run it again after the ChatGPT app updates: it replaces the old registration.
 
@@ -36,6 +38,7 @@ SERVER_KEY = "cua_repl"
 SETTINGS = Path.home() / ".claude" / "settings.json"
 APPROVALS = Path(__file__).resolve().parent / "approvals.py"
 HOOK_EVENTS = {"Elicitation": "ask", "ElicitationResult": "result"}
+TURN_END_EVENTS = {"Stop": "${session_id}", "SubagentStop": "${agent_id}"}
 
 
 def fail(message: str) -> None:
@@ -73,17 +76,36 @@ def newest_server_config() -> tuple:
 
 
 def is_our_hook(entry: dict, name: str) -> bool:
-    return entry.get("matcher") == name and any("approvals.py" in h.get("command", "") for h in entry.get("hooks", []))
+    for h in entry.get("hooks", []):
+        if entry.get("matcher") == name and "approvals.py" in h.get("command", ""):
+            return True
+        if h.get("type") == "mcp_tool" and h.get("server") == name and h.get("tool") == "turn_ended":
+            return True
+    return False
+
+
+def wanted_hooks(name: str) -> dict:
+    """The hook entries this skill adds, by event."""
+    wanted = {
+        event: {"matcher": name, "hooks": [{"type": "command", "command": f'python3 "{APPROVALS}" {mode}'}]}
+        for event, mode in HOOK_EVENTS.items()
+    }
+    for event, session in TURN_END_EVENTS.items():
+        wanted[event] = {"hooks": [{
+            "type": "mcp_tool", "server": name, "tool": "turn_ended",
+            "input": {"hook_event_name": "${hook_event_name}", "session_id": session, "turn_id": "${prompt_id}"},
+        }]}
+    return wanted
 
 
 def update_hooks(name: str, install: bool, dry_run: bool) -> None:
     """Add (or remove) the approval-memory hooks in ~/.claude/settings.json, keeping everything else."""
     settings = json.loads(SETTINGS.read_text()) if SETTINGS.exists() else {}
     hooks = settings.setdefault("hooks", {})
-    for event, mode in HOOK_EVENTS.items():
-        kept = [entry for entry in hooks.get(event, []) if not is_our_hook(entry, name)]
+    for event, entry in wanted_hooks(name).items():
+        kept = [e for e in hooks.get(event, []) if not is_our_hook(e, name)]
         if install:
-            kept.append({"matcher": name, "hooks": [{"type": "command", "command": f'python3 "{APPROVALS}" {mode}'}]})
+            kept.append(entry)
         if kept:
             hooks[event] = kept
         else:
@@ -92,14 +114,14 @@ def update_hooks(name: str, install: bool, dry_run: bool) -> None:
         settings.pop("hooks")
     if dry_run:
         verb = "add" if install else "remove"
-        print(f"Would {verb} the approval-memory hooks ({', '.join(HOOK_EVENTS)}) in {SETTINGS}")
+        print(f"Would {verb} the hooks ({', '.join(wanted_hooks(name))}) in {SETTINGS}")
         return
     if SETTINGS.exists():
         backup = SETTINGS.with_name("settings.json.backup-codex-cu")
         backup.write_text(SETTINGS.read_text())
     SETTINGS.parent.mkdir(parents=True, exist_ok=True)
     SETTINGS.write_text(json.dumps(settings, indent=2) + "\n")
-    print(("Added" if install else "Removed") + f" the approval-memory hooks in {SETTINGS} (backup: settings.json.backup-codex-cu).")
+    print(("Added" if install else "Removed") + f" the hooks in {SETTINGS} (backup: settings.json.backup-codex-cu).")
 
 
 def main() -> int:
