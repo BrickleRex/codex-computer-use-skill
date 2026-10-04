@@ -26,8 +26,9 @@ Claude Code as the MCP server `codex-cu` and explains how to drive it.
   python3 "<SKILL_DIR>/scripts/setup.py"
   ```
 
-  It finds the newest Computer Use in the ChatGPT app, registers it as `codex-cu`, and checks that
-  it connects. Then tell the user to close and reopen Claude Code: MCP tools load at startup.
+  It finds the newest Computer Use in the ChatGPT app, registers it as `codex-cu`, checks that it
+  connects, and adds two hooks that remember the user's app approvals for the session. Then tell
+  the user to close and reopen Claude Code: MCP tools load at startup.
   If it stops, show the user its message; it says what is missing.
 
 ## 2. How to use `mcp__codex-cu__js`
@@ -42,7 +43,8 @@ Claude Code as the MCP server `codex-cu` and explains how to drive it.
    The result contains the full API documentation and the app's UI as a numbered accessibility
    tree. Read both before acting.
 2. **Permission.** The first time an app is used in a session, the user is asked
-   *Allow Computer Use to use "App"?* If the result says it was not approved, ask the user to
+   *Allow Computer Use to use "App"?* Once they allow it, the hooks answer the repeat questions
+   for that app until the session ends. If the result says it was not approved, ask the user to
    allow it and try again. Do not work around it.
 3. **Act by element number, then look again.** Use the numbers from the latest tree, batch the
    actions, and end the same call with a fresh state:
@@ -74,7 +76,8 @@ Claude Code as the MCP server `codex-cu` and explains how to drive it.
 | Problem | Fix |
 | --- | --- |
 | No `mcp__codex-cu__js` tool | Run the setup script, then restart Claude Code. |
-| "Computer Use was not approved to use …" | The user must allow the app when asked. In the VS Code extension the question is not shown yet; use Claude Code in the terminal. |
+| "Computer Use was not approved to use …" | The user must allow the app when asked. In the VS Code extension the question is not shown yet: use Claude Code in the terminal, or add the app to `~/.claude/codex-cu/always-allow.txt` (one app name per line). |
+| The user is asked on every click | The approval hooks are missing: run the setup script again, then restart Claude Code. |
 | Setup: "Computer Use … was not found" | Install the ChatGPT desktop app and use Computer Use there once. |
 | It worked before, now it fails after a ChatGPT update | Run the setup script again, then restart Claude Code. |
 | The app cannot be read or clicked | Open the ChatGPT app and allow the macOS permissions Computer Use asks for (Accessibility, Screen Recording). |

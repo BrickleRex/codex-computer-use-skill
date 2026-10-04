@@ -48,14 +48,19 @@ Ask Claude Code to do something in an app:
 - "In Reminders, tell me what's on my Today list."
 
 The first time Claude uses an app, you are asked: **Allow Computer Use to use "Calculator"?**
-Choose to allow it. Claude asks you again before anything risky, like deleting or sending.
+Choose to allow it. You won't be asked again for that app until you close Claude Code.
+Claude still asks you before anything risky, like deleting or sending.
+
+To never be asked about an app, add its name (one per line) to
+`~/.claude/codex-cu/always-allow.txt`.
 
 ## If something goes wrong
 
 | What you see | What to do |
 | --- | --- |
 | Claude says it has no Computer Use tool | Run the setup again (the second command above), then close and reopen Claude Code. |
-| "Computer Use was not approved" | Allow the app when asked. In the VS Code extension this question doesn't appear yet; use Claude Code in the terminal. |
+| "Computer Use was not approved" | Allow the app when asked. In the VS Code extension this question doesn't appear yet: use Claude Code in the terminal, or add the app to the always-allow list above. |
+| You are asked on every click | Run the setup again, then close and reopen Claude Code. |
 | Setup says Computer Use was not found | Install the ChatGPT desktop app and use Computer Use in it once. |
 | It stopped working after a ChatGPT update | Run the setup again, then close and reopen Claude Code. |
 
@@ -63,13 +68,16 @@ Choose to allow it. Claude asks you again before anything risky, like deleting o
 
 - This is an unofficial bridge. It is not made by OpenAI or Anthropic, and a ChatGPT update can
   change things. Running the setup again usually fixes it.
-- Nothing is sent anywhere by this skill. The setup only adds a server entry to your own
-  Claude Code settings, pointing at the ChatGPT app already on your Mac.
+- Nothing is sent anywhere by this skill. The setup only adds a server and two small hooks to
+  your own Claude Code settings (it saves a backup first), pointing at the ChatGPT app already
+  on your Mac.
+- To remove everything: `python3 ~/.claude/skills/codex-computer-use/scripts/setup.py --uninstall`
 
 ## What's inside
 
 - `SKILL.md`: the instructions Claude follows
 - `scripts/setup.py`: finds Computer Use in the ChatGPT app and connects it to Claude Code
+- `scripts/approvals.py`: remembers which apps you allowed, so you aren't asked on every click
 
 ## License
 
